@@ -240,7 +240,9 @@ def run_release_pipeline(
 
     # Step 3: Publish release (draft by default)
     if draft_release:
-        console.print("\n[bold yellow]Step 3: Creating GitHub Draft Release for latest version...[/bold yellow]")
+        console.print(
+            "\n[bold yellow]Step 3: Creating GitHub Draft Release for latest version...[/bold yellow]"
+        )
         rel_code = run_release_workflow(
             root_dir=root_dir,
             publish=True,
@@ -248,8 +250,11 @@ def run_release_pipeline(
             draft=True,
         )
         if rel_code != 0:
-            console.print("[bold red]Pipeline warning: Draft release creation had errors.[/bold red]")
+            console.print(
+                "[bold red]Pipeline warning: Draft release creation had errors.[/bold red]"
+            )
 
-    console.print("\n[bold green]═════ Automated Post-Release Pipeline Completed ═════[/bold green]\n")
+    console.print(
+        "\n[bold green]═════ Automated Post-Release Pipeline Completed ═════[/bold green]\n"
+    )
     return 0
-

@@ -397,9 +397,7 @@ def release_pipeline_cmd(
     create_pr: bool = typer.Option(
         True, "--create-pr/--no-create-pr", help="Create or update pull request."
     ),
-    draft: bool = typer.Option(
-        True, "--draft/--no-draft", help="Create draft release on GitHub."
-    ),
+    draft: bool = typer.Option(True, "--draft/--no-draft", help="Create draft release on GitHub."),
 ) -> None:
     """Execute complete post-release pipeline: git push -> create PR -> draft release."""
     root_dir = find_project_root()
