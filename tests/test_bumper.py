@@ -101,6 +101,35 @@ def test_update_file_version_init_py(tmp_path: Path):
     assert '__version__ = "0.2.0"' in content
 
 
+def test_update_file_version_init_py_without_version(tmp_path: Path):
+    """Verify __init__.py without __version__ is NOT modified."""
+    init_py = tmp_path / "__init__.py"
+    init_py.write_text('from .sub import something\n', encoding="utf-8")
+    ok = update_file_version(init_py, "0.2.0")
+    assert not ok
+    assert '__version__' not in init_py.read_text(encoding="utf-8")
+
+
+def test_update_file_version_version_info(tmp_path: Path):
+    """Verify version_info.txt tuple and string struct updates."""
+    ver_info = tmp_path / "version_info.txt"
+    ver_info.write_text(
+        """filevers=(12, 1, 0, 0)
+prodvers=(12, 1, 0, 0)
+StringStruct('FileVersion', '12.1.0')
+StringStruct('ProductVersion', '12.1.0')
+""",
+        encoding="utf-8",
+    )
+    ok = update_file_version(ver_info, "12.1.1")
+    assert ok
+    content = ver_info.read_text(encoding="utf-8")
+    assert "filevers=(12, 1, 1, 0)" in content
+    assert "prodvers=(12, 1, 1, 0)" in content
+    assert "StringStruct('FileVersion', '12.1.1')" in content
+    assert "StringStruct('ProductVersion', '12.1.1')" in content
+
+
 def test_generate_changelog_section():
     """Verify generating Markdown release notes section with conventional categories."""
     commits = [

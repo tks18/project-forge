@@ -47,9 +47,10 @@ class BumpConfig(BaseModel):
     """Version bumper and changelog generator configuration."""
 
     tag_prefix: str = "v"
-    files: list[str] = Field(default_factory=lambda: ["pyproject.toml", "src/**/__init__.py"])
+    files: list[str] = Field(default_factory=lambda: ["pyproject.toml", "package.json"])
     commit_all: bool = True
     changelog_file: str = "CHANGELOG.md"
+    sync_uv: bool = True
 
 
 class ProjectForgeConfig(BaseModel):

@@ -50,6 +50,12 @@ full = ["ruff-check", "ruff-format", "mypy", "pyright", "pytest"]
 [tool.project-forge.commits]
 header_max_length = 72
 
+[tool.project-forge.bump]
+tag_prefix = "v"
+files = ["pyproject.toml", "src/project_forge/__init__.py"]
+commit_all = true
+changelog_file = "CHANGELOG.md"
+
 [tool.project-forge.docs]
 require_module_docstrings = true
 require_package_ownership = false

@@ -113,6 +113,11 @@ def bump(
         "--no-tag",
         help="Do not create annotated release tag.",
     ),
+    pipeline: bool = typer.Option(
+        False,
+        "--pipeline",
+        help="Execute complete post-release pipeline after bumping (push, PR, draft release).",
+    ),
 ) -> None:
     """Native Python SemVer version bumper and changelog generator."""
     target_release_as = release_as
@@ -134,6 +139,7 @@ def bump(
         no_commit=no_commit,
         no_tag=no_tag,
         tag_prefix=cfg.bump.tag_prefix,
+        pipeline=pipeline,
     )
     if dry_run:
         typer.echo(f"[DRY-RUN] Next calculated version: {new_version}")
@@ -407,6 +413,37 @@ def release_pipeline_cmd(
         create_pr=create_pr,
         draft_release=draft,
     )
+    raise typer.Exit(code)
+
+
+@release_app.command("flow")
+def release_flow_cmd(
+    patch: bool = typer.Option(False, "--patch", help="Bump patch version and execute pipeline."),
+    minor: bool = typer.Option(False, "--minor", help="Bump minor version and execute pipeline."),
+    major: bool = typer.Option(False, "--major", help="Bump major version and execute pipeline."),
+    release_as: str | None = typer.Option(
+        None, "--release-as", "--as", help="Explicit version to bump to."
+    ),
+) -> None:
+    """Execute complete release flow: bump version -> push -> create PR -> draft release."""
+    target_release_as = release_as
+    if patch:
+        target_release_as = "patch"
+    elif minor:
+        target_release_as = "minor"
+    elif major:
+        target_release_as = "major"
+
+    root_dir = find_project_root()
+    cfg = load_config(root_dir)
+    code, new_version = run_bump(
+        root_dir=root_dir,
+        release_as=target_release_as,
+        tag_prefix=cfg.bump.tag_prefix,
+        pipeline=True,
+    )
+    if code == 0:
+        typer.echo(f"Successfully completed release flow for {cfg.bump.tag_prefix}{new_version}")
     raise typer.Exit(code)
 
 
