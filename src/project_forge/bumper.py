@@ -319,11 +319,6 @@ def update_file_version(
         if count > 0:
             filepath.write_text(subbed, encoding="utf-8")
             return True
-        # If __version__ not present, append it
-        if "__version__" not in content:
-            new_content = content.rstrip() + f'\n__version__ = "{new_version}"\n'
-            filepath.write_text(new_content, encoding="utf-8")
-            return True
         return False
 
     return False
@@ -473,9 +468,10 @@ def run_bump(
     target_files: list[Path] = [
         root_dir / "pyproject.toml",
     ]
-    # Check for __init__.py files in src/
+    # Check for __init__.py files in src/ that declare __version__
     for init_file in (root_dir / "src").rglob("__init__.py"):
-        target_files.append(init_file)
+        if "__version__" in init_file.read_text(encoding="utf-8", errors="ignore"):
+            target_files.append(init_file)
     if (root_dir / "package.json").exists():
         target_files.append(root_dir / "package.json")
 
