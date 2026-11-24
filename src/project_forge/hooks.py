@@ -196,4 +196,3 @@ def get_hooks_status(root_dir: Path | None = None) -> dict[str, Any]:
         "git_hooks_pre_commit": pre_commit_git,
         "git_hooks_pre_push": pre_push_git,
     }
-
