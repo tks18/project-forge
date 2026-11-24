@@ -146,4 +146,3 @@ def is_git_clean(root_dir: Path) -> bool:
         True if clean, False otherwise.
     """
     return len(get_dirty_files(root_dir)) == 0
-
