@@ -1,4 +1,4 @@
-# Project Forge (`pforge`)
+# Project Forge (`pforge` / `pforge-cli`)
 
 Repository-neutral engineering workflow CLI for quality gates, conventional commits, releases, and versioning.
 
@@ -17,10 +17,10 @@ Project Forge standardizes common Python repository engineering workflows into a
 
 ```bash
 # Using uv (recommended)
-uv add --dev project-forge
+uv add --dev pforge-cli
 
 # Using pip
-pip install project-forge
+pip install pforge-cli
 ```
 
 ## CLI Usage

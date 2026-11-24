@@ -1,5 +1,5 @@
 [project]
-name = "project-forge"
+name = "pforge-cli"
 version = "0.1.0"
 description = "Repository-neutral engineering workflow CLI for quality gates, commits, releases, and versioning."
 readme = "README.md"
