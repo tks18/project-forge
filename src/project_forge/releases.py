@@ -171,3 +171,85 @@ def run_release_workflow(
             return 1
 
     return 0
+
+
+def run_release_pipeline(
+    root_dir: Path | None = None,
+    push: bool = True,
+    create_pr: bool = True,
+    draft_release: bool = True,
+) -> int:
+    """Execute complete post-tag release pipeline: git push -> create PR -> draft release.
+
+    Parameters
+    ----------
+    root_dir : Path | None, optional
+        Project root directory.
+    push : bool, optional
+        Whether to push branch and follow-tags, by default True.
+    create_pr : bool, optional
+        Whether to create/update pull request, by default True.
+    draft_release : bool, optional
+        Whether to draft GitHub release, by default True.
+
+    Returns
+    -------
+    int
+        0 on success, non-zero on failure.
+    """
+    if root_dir is None:
+        from project_forge.project import find_project_root
+
+        root_dir = find_project_root()
+
+    from project_forge.config import load_config
+    from project_forge.pull_requests import run_pr_workflow
+
+    cfg = load_config(root_dir)
+    dev_branch = cfg.git.development_branch
+    base_branch = cfg.git.default_branch
+
+    console.print("\n[bold cyan]═════ Starting Automated Post-Release Pipeline ═════[/bold cyan]\n")
+
+    # Step 1: Push commits and tags to remote
+    if push:
+        console.print(
+            f"[bold yellow]Step 1: Pushing commits and release tags to origin {dev_branch}...[/bold yellow]"
+        )
+        push_res = run_process(["git", "push", "--follow-tags", "origin", dev_branch], cwd=root_dir)
+        if not push_res.passed:
+            console.print(
+                f"[bold red]Pipeline aborted: git push failed.[/bold red]\n{push_res.stderr}"
+            )
+            return push_res.exit_code
+        console.print("[bold green]✔ Git push completed successfully.[/bold green]")
+
+    # Step 2: Create/update PR
+    if create_pr:
+        console.print(
+            f"\n[bold yellow]Step 2: Creating/updating Pull Request into {base_branch} with Quality Gate certification...[/bold yellow]"
+        )
+        pr_code = run_pr_workflow(
+            root_dir=root_dir,
+            head=dev_branch,
+            base=base_branch,
+            dry_run=False,
+        )
+        if pr_code != 0:
+            console.print("[bold red]Pipeline warning: PR creation had errors.[/bold red]")
+
+    # Step 3: Publish release (draft by default)
+    if draft_release:
+        console.print("\n[bold yellow]Step 3: Creating GitHub Draft Release for latest version...[/bold yellow]")
+        rel_code = run_release_workflow(
+            root_dir=root_dir,
+            publish=True,
+            latest=True,
+            draft=True,
+        )
+        if rel_code != 0:
+            console.print("[bold red]Pipeline warning: Draft release creation had errors.[/bold red]")
+
+    console.print("\n[bold green]═════ Automated Post-Release Pipeline Completed ═════[/bold green]\n")
+    return 0
+

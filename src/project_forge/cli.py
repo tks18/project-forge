@@ -19,7 +19,7 @@ from project_forge.project import find_project_root
 from project_forge.publishing import run_publish_flow
 from project_forge.pull_requests import run_pr_workflow
 from project_forge.quality import run_quality_gate
-from project_forge.releases import run_release_workflow
+from project_forge.releases import run_release_pipeline, run_release_workflow
 from project_forge.status import show_status
 
 app = typer.Typer(
@@ -71,6 +71,21 @@ def bump(
         "-r",
         help="Explicit release increment ('patch', 'minor', 'major', or version like '1.2.0').",
     ),
+    patch: bool = typer.Option(
+        False,
+        "--patch",
+        help="Bump patch version (e.g. 1.0.0 -> 1.0.1).",
+    ),
+    minor: bool = typer.Option(
+        False,
+        "--minor",
+        help="Bump minor version (e.g. 1.0.0 -> 1.1.0).",
+    ),
+    major: bool = typer.Option(
+        False,
+        "--major",
+        help="Bump major version (e.g. 1.0.0 -> 2.0.0).",
+    ),
     prerelease: str | None = typer.Option(
         None,
         "--prerelease",
@@ -100,11 +115,19 @@ def bump(
     ),
 ) -> None:
     """Native Python SemVer version bumper and changelog generator."""
+    target_release_as = release_as
+    if patch:
+        target_release_as = "patch"
+    elif minor:
+        target_release_as = "minor"
+    elif major:
+        target_release_as = "major"
+
     root_dir = find_project_root()
     cfg = load_config(root_dir)
     code, new_version = run_bump(
         root_dir=root_dir,
-        release_as=release_as,
+        release_as=target_release_as,
         prerelease=prerelease,
         first_release=first_release,
         dry_run=dry_run,
@@ -362,6 +385,29 @@ def release_publish(
         single_version=version,
         draft=draft,
         interactive=interactive,
+    )
+    raise typer.Exit(code)
+
+
+@release_app.command("pipeline")
+def release_pipeline_cmd(
+    push: bool = typer.Option(
+        True, "--push/--no-push", help="Push commits and tags to remote origin."
+    ),
+    create_pr: bool = typer.Option(
+        True, "--create-pr/--no-create-pr", help="Create or update pull request."
+    ),
+    draft: bool = typer.Option(
+        True, "--draft/--no-draft", help="Create draft release on GitHub."
+    ),
+) -> None:
+    """Execute complete post-release pipeline: git push -> create PR -> draft release."""
+    root_dir = find_project_root()
+    code = run_release_pipeline(
+        root_dir=root_dir,
+        push=push,
+        create_pr=create_pr,
+        draft_release=draft,
     )
     raise typer.Exit(code)
 
