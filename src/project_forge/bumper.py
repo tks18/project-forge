@@ -309,7 +309,38 @@ def update_file_version(
         except Exception:
             return False
 
-    if name == "__init__.py":
+    if name == "version_info.txt":
+        content = filepath.read_text(encoding="utf-8")
+        # Convert SemVer '12.1.1' to '12, 1, 1, 0' for Windows fixed info
+        parts = new_version.split("-")[0].split(".")
+        while len(parts) < 4:
+            parts.append("0")
+        tuple_str = ", ".join(parts[:4])
+
+        content = re.sub(
+            r"filevers=\(\d+,\s*\d+,\s*\d+,\s*\d+\)",
+            f"filevers=({tuple_str})",
+            content,
+        )
+        content = re.sub(
+            r"prodvers=\(\d+,\s*\d+,\s*\d+,\s*\d+\)",
+            f"prodvers=({tuple_str})",
+            content,
+        )
+        content = re.sub(
+            r"StringStruct\('FileVersion',\s*'[^']+'\)",
+            f"StringStruct('FileVersion', '{new_version}')",
+            content,
+        )
+        content = re.sub(
+            r"StringStruct\('ProductVersion',\s*'[^']+'\)",
+            f"StringStruct('ProductVersion', '{new_version}')",
+            content,
+        )
+        filepath.write_text(content, encoding="utf-8")
+        return True
+
+    if name.endswith(".py"):
         content = filepath.read_text(encoding="utf-8")
         subbed, count = re.subn(
             r'(__version__\s*=\s*")[^"]+(")',
@@ -318,11 +349,6 @@ def update_file_version(
         )
         if count > 0:
             filepath.write_text(subbed, encoding="utf-8")
-            return True
-        # If __version__ not present, append it
-        if "__version__" not in content:
-            new_content = content.rstrip() + f'\n__version__ = "{new_version}"\n'
-            filepath.write_text(new_content, encoding="utf-8")
             return True
         return False
 
@@ -418,6 +444,7 @@ def run_bump(
     no_commit: bool = False,
     no_tag: bool = False,
     tag_prefix: str = "v",
+    pipeline: bool = False,
 ) -> tuple[int, str]:
     """Execute complete native SemVer bump and changelog generation.
 
@@ -439,6 +466,8 @@ def run_bump(
         Skip creating Git release tag.
     tag_prefix : str, optional
         Tag prefix, by default 'v'.
+    pipeline : bool, optional
+        Whether to execute post-release pipeline after bumping, by default False.
 
     Returns
     -------
@@ -470,14 +499,37 @@ def run_bump(
         tag_prefix=tag_prefix,
     )
 
-    target_files: list[Path] = [
-        root_dir / "pyproject.toml",
-    ]
-    # Check for __init__.py files in src/
-    for init_file in (root_dir / "src").rglob("__init__.py"):
-        target_files.append(init_file)
-    if (root_dir / "package.json").exists():
-        target_files.append(root_dir / "package.json")
+    target_files: list[Path] = []
+    if cfg.bump.files:
+        for f_pattern in cfg.bump.files:
+            if any(char in f_pattern for char in ("*", "?", "[")):
+                for m in root_dir.glob(f_pattern):
+                    if m.is_file():
+                        if m.suffix == ".py":
+                            if "__version__" in m.read_text(encoding="utf-8", errors="ignore"):
+                                target_files.append(m)
+                        else:
+                            target_files.append(m)
+            else:
+                p = root_dir / f_pattern
+                if p.is_file():
+                    target_files.append(p)
+    else:
+        # Default files: pyproject.toml, package.json, and only top-level package __init__.py if __version__ is present
+        if (root_dir / "pyproject.toml").is_file():
+            target_files.append(root_dir / "pyproject.toml")
+        if (root_dir / "package.json").is_file():
+            target_files.append(root_dir / "package.json")
+        for src_dir in cfg.source:
+            src_path = root_dir / src_dir
+            if src_path.exists():
+                for pkg_dir in src_path.iterdir():
+                    if pkg_dir.is_dir():
+                        init_f = pkg_dir / "__init__.py"
+                        if init_f.is_file() and "__version__" in init_f.read_text(
+                            encoding="utf-8", errors="ignore"
+                        ):
+                            target_files.append(init_f)
 
     changelog_path = root_dir / cfg.bump.changelog_file
 
@@ -491,13 +543,22 @@ def run_bump(
     # Prepend changelog
     prepend_to_changelog(changelog_path, changelog_section)
 
+    # Update uv.lock if pyproject.toml was updated and sync_uv is enabled
+    if cfg.bump.sync_uv and (root_dir / "pyproject.toml") in target_files:
+        run_process(["uv", "sync"], cwd=root_dir)
+
     # Git stage and commit
     if not no_commit:
         paths_to_stage = [str(f.relative_to(root_dir)) for f in target_files if f.exists()]
         if changelog_path.exists():
             paths_to_stage.append(str(changelog_path.relative_to(root_dir)))
+        if (root_dir / "uv.lock").exists():
+            paths_to_stage.append("uv.lock")
 
+        if cfg.bump.commit_all:
+            run_process(["git", "add", "-u"], cwd=root_dir)
         run_process(["git", "add"] + paths_to_stage, cwd=root_dir)
+
         commit_msg = f"chore(release): {tag_prefix}{new_version}"
         commit_res = run_process(["git", "commit", "-m", commit_msg], cwd=root_dir)
         if not commit_res.passed:
@@ -510,5 +571,13 @@ def run_bump(
         tag_res = run_process(["git", "tag", "-a", tag_name, "-m", tag_msg], cwd=root_dir)
         if not tag_res.passed:
             return 1, new_version
+
+    # Execute release pipeline if requested
+    if pipeline:
+        from project_forge.releases import run_release_pipeline
+
+        pipeline_code = run_release_pipeline(root_dir=root_dir)
+        if pipeline_code != 0:
+            return pipeline_code, new_version
 
     return 0, new_version

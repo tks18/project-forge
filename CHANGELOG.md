@@ -1,6 +1,22 @@
 # Changelog
 
 
+
+## [0.1.2] - 2026-11-24
+
+### Bug Fixes 🛠
+- **bumper**: honor cfg.bump.files, support version_info.txt, and add release flow pipeline ([26e8316](commit/26e8316))
+- **bumper**: only update __init__.py files that declare __version__ ([984cb96](commit/984cb96))
+
+### Documentation 📃
+- remove planning docs ([b27fe0e](commit/b27fe0e))
+
+### Styling 🎨
+- format cli and releases modules ([51a7bab](commit/51a7bab))
+
+### Others 🔧
+- update uv.lock for v0.1.1 ([13fba13](commit/13fba13))
+
 ## [0.1.1] - 2026-11-24
 
 ### Features 🔥
