@@ -1,0 +1,65 @@
+# ==============================================================================
+# Pylint Configuration
+# Repository: project-forge
+# Python: >=3.13
+# Linked Companion Configs:
+#   - Ruff: ruff.toml
+#   - Mypy: mypy.ini
+# ==============================================================================
+
+[MASTER]
+py-version = 3.13
+jobs = 0
+source-roots = src
+init-hook = 'import sys; sys.path.insert(0, "src")'
+
+ignore =
+    tests,
+    scripts,
+    docs,
+    .plan,
+    build,
+    dist,
+    outputs,
+    backups,
+    scratch,
+    .venv
+
+ignore-patterns =
+    ^test_.*\.py$,
+    ^tests$,
+    ^scripts$,
+    ^docs$
+
+ignore-paths =
+    (^|[/\\])(tests|scripts|docs|\.plan|build|dist|outputs|backups|scratch|\.venv)([/\\]|$)
+
+[MESSAGES CONTROL]
+disable =
+    raw-checker-failed,
+    bad-inline-option,
+    locally-disabled,
+    file-ignored,
+    suppressed-message,
+    useless-suppression,
+    deprecated-pragma,
+    use-symbolic-message-instead,
+    line-too-long,
+    too-many-arguments,
+    too-many-positional-arguments,
+    too-many-instance-attributes,
+    too-many-locals,
+    too-many-branches,
+    too-many-statements,
+    duplicate-code
+
+[REPORTS]
+output-format = text
+reports = no
+score = yes
+
+[BASIC]
+good-names = i,j,k,ex,Run,_,fp,f,p,cmd,e,rc
+
+[FORMAT]
+max-line-length = 100

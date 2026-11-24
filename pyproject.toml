@@ -1,17 +1,52 @@
 [project]
 name = "project-forge"
 version = "0.1.0"
-description = "Add your description here"
+description = "Repository-neutral engineering workflow CLI for quality gates, commits, releases, and versioning."
 readme = "README.md"
+license = "GPL-3.0-or-later"
 authors = [
     { name = "tks18", email = "tksudharshan@gmail.com" }
 ]
 requires-python = ">=3.13"
-dependencies = []
+dependencies = [
+    "packaging>=24.0",
+    "pydantic>=2.7.0",
+    "rich>=13.0.0",
+    "tomlkit>=0.12.0",
+    "typer>=0.12.0",
+]
 
 [project.scripts]
-project-forge = "project_forge:main"
+pforge = "project_forge.cli:app"
 
 [build-system]
 requires = ["uv_build>=0.11.28,<0.12.0"]
 build-backend = "uv_build"
+
+[dependency-groups]
+dev = [
+    "mypy>=1.10.0",
+    "pyright>=1.1.350",
+    "pytest>=8.0.0",
+    "ruff>=0.8.0",
+]
+
+[tool.project-forge]
+source = ["src"]
+tests = ["tests"]
+changelog = "CHANGELOG.md"
+
+[tool.project-forge.git]
+development_branch = "dev"
+default_branch = "master"
+
+[tool.project-forge.quality]
+fast = ["ruff-check", "ruff-format", "mypy"]
+full = ["ruff-check", "ruff-format", "mypy", "pyright", "pytest"]
+
+[tool.project-forge.commits]
+header_max_length = 72
+
+[tool.project-forge.docs]
+require_module_docstrings = true
+require_package_ownership = false
