@@ -64,9 +64,26 @@ changelog = "CHANGELOG.md"
     res_cl_val = run_process(["uv", "run", "pforge", "changelog", "validate"], cwd=repo_dir)
     assert res_cl_val.passed
 
-    # 7. Run pforge bump --dry-run
-    res_bump = run_process(
-        ["uv", "run", "pforge", "bump", "--dry-run", "--release-as", "minor"], cwd=repo_dir
+    # 7. Run pforge bump --dry-run with --patch, --minor, --major flags
+    res_bump_patch = run_process(
+        ["uv", "run", "pforge", "bump", "--dry-run", "--patch"], cwd=repo_dir
     )
-    assert res_bump.passed
-    assert "0.2.0" in res_bump.stdout
+    assert res_bump_patch.passed
+    assert "0.1.1" in res_bump_patch.stdout
+
+    res_bump_minor = run_process(
+        ["uv", "run", "pforge", "bump", "--dry-run", "--minor"], cwd=repo_dir
+    )
+    assert res_bump_minor.passed
+    assert "0.2.0" in res_bump_minor.stdout
+
+    res_bump_major = run_process(
+        ["uv", "run", "pforge", "bump", "--dry-run", "--major"], cwd=repo_dir
+    )
+    assert res_bump_major.passed
+    assert "1.0.0" in res_bump_major.stdout
+
+    # 8. Verify release pipeline command exists
+    res_release_help = run_process(["uv", "run", "pforge", "release", "--help"], cwd=repo_dir)
+    assert res_release_help.passed
+    assert "pipeline" in res_release_help.stdout
